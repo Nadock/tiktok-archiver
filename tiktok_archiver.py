@@ -141,8 +141,14 @@ def download_videos(videos: List[Video], output: pathlib.Path):
         f"{output}/%(id)s.%(ext)s",
     ]
 
-    for video in videos:
-        print(f"Dowloading {video.link} ...", end="\r", file=sys.stderr)
+    print(f"Downloading {len(videos)} videos to {output}")
+
+    for idx, video in enumerate(videos):
+        print(
+            f"Dowloading ({idx+1}/{len(videos)}) {video.link} ...",
+            end="\r",
+            file=sys.stderr,
+        )
 
         try:
             subprocess.run(
@@ -150,9 +156,14 @@ def download_videos(videos: List[Video], output: pathlib.Path):
             )
         except subprocess.CalledProcessError as ex:
             error = str(ex.stderr).split("\n")[0]
-            print(f"Dowloading {video.link} FAILED ❌:\n\t{error}", file=sys.stderr)
+            print(
+                f"Dowloading ({idx+1}/{len(videos)}) {video.link} FAILED ❌:\n\t{error}",
+                file=sys.stderr,
+            )
 
-        print(f"Dowloading {video.link} DONE ✅", file=sys.stderr)
+        print(
+            f"Dowloading ({idx+1}/{len(videos)}) {video.link} DONE ✅", file=sys.stderr
+        )
 
 
 if __name__ == "__main__":
