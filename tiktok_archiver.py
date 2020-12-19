@@ -40,7 +40,7 @@ def _init_argparse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("archive_path")
-    parser.add_argument("output")
+    parser.add_argument("output_path")
     parser.add_argument(
         "--save",
         default=[],
@@ -54,46 +54,38 @@ def _init_argparse():
 
 def main():
     args = _init_argparse()
-    # print(f"{args=}")
-    archive_path = extract_archvie(args.archive_path)
-    # print(f"{archive_path=}")
+
+    archive_path = pathlib.Path(args.archive_path)
+    output_path = pathlib.Path(args.output_path)
+
+    archive_path = extract_archvie(archive_path)
     archive_videos = discover_videos(archive_path)
 
     if "favourites" in args.save:
-        # print(f"Found {len(archive_videos.favourites)} videos in your favourites")
         if archive_videos.favourites:
-            # print(f"For example: {archive_videos.favourites[0]}")
-            download_videos(archive_videos.favourites, args.output)
+            download_videos(archive_videos.favourites, output_path / "favourites")
 
     if "likes" in args.save:
-        # print(f"Found {len(archive_videos.likes)} videos in your likes")
         if archive_videos.likes:
-            # print(f"For example: {archive_videos.likes[0]}")
-            download_videos(archive_videos.likes, args.output)
+            download_videos(archive_videos.likes, output_path / "likes")
 
     if "uploads" in args.save:
-        # print(f"Found {len(archive_videos.uploads)} videos in your uploads")
         if archive_videos.uploads:
-            # print(f"For example: {archive_videos.uploads[0]}")
-            download_videos(archive_videos.uploads, args.output)
+            download_videos(archive_videos.uploads, output_path / "uploads")
 
     if "history" in args.save:
-        # print(f"Found {len(archive_videos.history)} videos in your browsing history")
         if archive_videos.history:
-            # print(f"For example: {archive_videos.history[0]}")
-            download_videos(archive_videos.history, args.output)
+            download_videos(archive_videos.history, output_path / "history")
 
 
-def extract_archvie(archive_path: str) -> pathlib.Path:
-    path = pathlib.Path(archive_path)
+def extract_archvie(archive_path: pathlib.Path) -> pathlib.Path:
+    if archive_path.is_dir():
+        return archive_path
 
-    if path.is_dir():
-        return path
-
-    if path.is_file():
+    if archive_path.is_file():
         temp_dir = tempfile.mkdtemp()
 
-        with zipfile.ZipFile(path) as zfile:
+        with zipfile.ZipFile(archive_path) as zfile:
             zfile.extractall(temp_dir)
 
         return pathlib.Path(temp_dir)
@@ -127,8 +119,6 @@ def read_videos(file_path: pathlib.Path):
 
     with open(file_path) as path:
         for line in path.readlines():
-            # Date: 2020-08-12 02:16:22
-            # Video Link: https://www.tiktokv.com/share/video/6850067280781446406/
             if line.startswith("Date: "):
                 datetime = line.split(":", 1)[1]
             elif line.startswith("Video Link:"):
