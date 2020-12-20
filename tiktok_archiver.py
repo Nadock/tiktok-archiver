@@ -7,6 +7,8 @@ import dataclasses
 import datetime
 import subprocess
 import sys
+from multiprocessing import dummy
+from functools import partial
 from typing import List
 
 
@@ -47,6 +49,7 @@ def _init_argparse():
         choices=["favourites", "likes", "uploads", "history"],
         action="append",
     )
+    parser.add_argument("--parallel", default=20, type=int)
 
     args = parser.parse_args()
     return args
@@ -63,19 +66,25 @@ def main():
 
     if "favourites" in args.save:
         if archive_videos.favourites:
-            download_videos(archive_videos.favourites, output_path / "favourites")
+            download_videos(
+                archive_videos.favourites, output_path / "favourites", args.parallel
+            )
 
     if "likes" in args.save:
         if archive_videos.likes:
-            download_videos(archive_videos.likes, output_path / "likes")
+            download_videos(archive_videos.likes, output_path / "likes", args.parallel)
 
     if "uploads" in args.save:
         if archive_videos.uploads:
-            download_videos(archive_videos.uploads, output_path / "uploads")
+            download_videos(
+                archive_videos.uploads, output_path / "uploads", args.parallel
+            )
 
     if "history" in args.save:
         if archive_videos.history:
-            download_videos(archive_videos.history, output_path / "history")
+            download_videos(
+                archive_videos.history, output_path / "history", args.parallel
+            )
 
 
 def extract_archvie(archive_path: pathlib.Path) -> pathlib.Path:
@@ -132,38 +141,44 @@ def read_videos(file_path: pathlib.Path):
     return videos
 
 
-def download_videos(videos: List[Video], output: pathlib.Path):
-    yt_dl_args = [
-        "youtube-dl",
-        "--write-info-json",
-        "--ignore-errors",
-        "--output",
-        f"{output}/%(id)s.%(ext)s",
+def download_videos(videos: List[Video], output: pathlib.Path, threads: int):
+
+    print(f"Downloading {len(videos)} videos to {output} with {threads} threads")
+
+    commands = [
+        [
+            "youtube-dl",
+            "--write-info-json",
+            "--ignore-errors",
+            "--output",
+            f"{output}/%(id)s.%(ext)s",
+            video.link,
+        ]
+        for video in videos
     ]
 
-    print(f"Downloading {len(videos)} videos to {output}")
+    pool = dummy.Pool(threads)
+    results: List[subprocess.CompletedProcess] = pool.imap(
+        partial(subprocess.run, capture_output=True, text=True), commands
+    )
 
-    for idx, video in enumerate(videos):
-        print(
-            f"Dowloading ({idx+1}/{len(videos)}) {video.link} ...",
-            end="\r",
-            file=sys.stderr,
-        )
-
-        try:
-            subprocess.run(
-                yt_dl_args + [video.link], capture_output=True, check=True, text=True
-            )
-        except subprocess.CalledProcessError as ex:
-            error = str(ex.stderr).split("\n")[0]
+    done_count = 0
+    for result in results:
+        done_count += 1
+        if result.returncode == 0:
             print(
-                f"Dowloading ({idx+1}/{len(videos)}) {video.link} FAILED ❌:\n\t{error}",
+                f"Dowloading ({done_count}/{len(videos)}) {result.args[-1]}\tDONE ✅",
                 file=sys.stderr,
             )
-
-        print(
-            f"Dowloading ({idx+1}/{len(videos)}) {video.link} DONE ✅", file=sys.stderr
-        )
+        else:
+            error = result.stderr.split("\n", 1)[0]
+            print(
+                (
+                    f"Dowloading ({done_count}/{len(videos)}) {result.args[-1]}\t"
+                    f"FAILED ❌: \n\t{error}"
+                ),
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":
