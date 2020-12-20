@@ -8,6 +8,10 @@ Above the stanard "use at your own risk" disclaimers, fair warning this is very 
 prototype solution and could do all sorts of dumb things. If you observe it doing
 something dumb please open an [Issue](https://github.com/Nadock/tiktok-archiver/issues).
 
+Also, while I haven't seen it in my testing, it is possible TikTok could ban or
+temporarily supsend your account or IP for using this. I also haven't checked if you are
+allowed to do download TikToks with this script under the TOS. Use at your own risk.
+
 ## Installing
 
 Currently the only way to get the script is to clone the repository:
@@ -43,10 +47,8 @@ TikTok version 18.2.0.
 
 ## Running the script
 
-One of the first features I want to improve is the script's `--help` output, but for now
-it's a bit lacklustre. To save all the currently supported video types, try this
-example:
+The `--help` output should reasonably explain how to use the script. However, you could start with this example to download all your favourited and liked videos:
 
 ```bash
-$> ./tiktok_archiver.py --save favourites --save likes --save uploads --save history {archive_path} {output_path}
+$> ./tiktok_archiver.py --save favourites --save likes {archive_path} {output_path}
 ```
