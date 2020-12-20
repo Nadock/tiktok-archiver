@@ -65,17 +65,35 @@ class ArchiveVideos:
 
 def _init_argparse():
     """Prepare an `argparse.ArgumentParser` and use it to parse the CLI command."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Download copies of TikTok videos from a user data export.",
+    )
 
-    parser.add_argument("archive_path")
-    parser.add_argument("output_path")
+    parser.add_argument(
+        "archive_path",
+        help="The location of the TikTok user data export to read video lists from",
+    )
+    parser.add_argument(
+        "output_path",
+        help="The directory to save the downloaded TikTok videos",
+    )
     parser.add_argument(
         "--save",
         default=[],
         choices=["favourites", "likes", "uploads", "history"],
         action="append",
+        help=(
+            "Select which list or lists of TikTok videos to save, "
+            "repeat to save multiple lists at once"
+        ),
     )
-    parser.add_argument("--parallel", default=20, type=int)
+    parser.add_argument(
+        "--jobs",
+        default=20,
+        type=int,
+        metavar="N",
+        help="Set the number of simultanious download jobs to use",
+    )
 
     args = parser.parse_args()
     return args
@@ -202,24 +220,20 @@ def main():
     if "favourites" in args.save:
         if archive_videos.favourites:
             download_videos(
-                archive_videos.favourites, output_path / "favourites", args.parallel
+                archive_videos.favourites, output_path / "favourites", args.jobs
             )
 
     if "likes" in args.save:
         if archive_videos.likes:
-            download_videos(archive_videos.likes, output_path / "likes", args.parallel)
+            download_videos(archive_videos.likes, output_path / "likes", args.jobs)
 
     if "uploads" in args.save:
         if archive_videos.uploads:
-            download_videos(
-                archive_videos.uploads, output_path / "uploads", args.parallel
-            )
+            download_videos(archive_videos.uploads, output_path / "uploads", args.jobs)
 
     if "history" in args.save:
         if archive_videos.history:
-            download_videos(
-                archive_videos.history, output_path / "history", args.parallel
-            )
+            download_videos(archive_videos.history, output_path / "history", args.jobs)
 
 
 if __name__ == "__main__":
