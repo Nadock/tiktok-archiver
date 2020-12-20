@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+Download copies of TikTok videos from a user data export.
+
+Example:
+```
+$> ./tiktok_archiver.py --save likes {archive_path} {output_path}
+```
+"""
 import argparse
 import dataclasses
 import datetime
